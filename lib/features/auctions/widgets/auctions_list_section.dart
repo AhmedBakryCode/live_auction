@@ -1,62 +1,117 @@
 import 'package:flutter/material.dart';
-import '../../../core/theme/app_colors.dart';
 import 'auction_card.dart';
+import '../repositories/auctions_repository.dart';
+import '../models/auction_model.dart';
+import '../../../core/theme/app_colors.dart';
 
-class AuctionsListSection extends StatelessWidget {
+class AuctionsListSection extends StatefulWidget {
   const AuctionsListSection({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // Dummy Data
-    final List<Map<String, dynamic>> auctions = [
-      {
-        'image': 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400',
-        'name': 'ساعة رولكس صبمارينر',
-        'category': 'ساعات فاخرة',
-        'currentPrice': '\$12,500',
-        'startPrice': '\$10,000',
-        'topBidder': 'أحمد محمد',
-        'topBidderAvatar': 'https://i.pravatar.cc/150?u=ahmed',
-        'status': 'نشط',
-        'remainingTime': '02:45:12',
-        'bidsCount': 45,
-      },
-      {
-        'image': 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=400',
-        'name': 'ماك بوك برو M3',
-        'category': 'إلكترونيات',
-        'currentPrice': '\$2,200',
-        'startPrice': '\$1,500',
-        'topBidder': 'سارة علي',
-        'topBidderAvatar': 'https://i.pravatar.cc/150?u=sara',
-        'status': 'نشط',
-        'remainingTime': '15:20:00',
-        'bidsCount': 12,
-      },
-      {
-        'image': 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400',
-        'name': 'نايك إير جوردان',
-        'category': 'أحذية الرياضية',
-        'currentPrice': '\$450',
-        'startPrice': '\$100',
-        'topBidder': 'خالد عبدالله',
-        'topBidderAvatar': 'https://i.pravatar.cc/150?u=khaled',
-        'status': 'قريباً',
-        'remainingTime': '00:05:40',
-        'bidsCount': 89,
-      },
-    ];
+  State<AuctionsListSection> createState() => _AuctionsListSectionState();
+}
 
-    return SliverList(
-      delegate: SliverChildBuilderDelegate(
-        (context, index) {
-          final auction = auctions[index];
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            child: AuctionCard(auction: auction),
+class _AuctionsListSectionState extends State<AuctionsListSection> {
+  final AuctionsRepository _repository = AuctionsRepository();
+  late Future<List<AuctionModel>> _auctionsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchAuctions();
+  }
+
+  void _fetchAuctions() {
+    setState(() {
+      _auctionsFuture = _repository.fetchAuctions();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverToBoxAdapter(
+      child: FutureBuilder<List<AuctionModel>>(
+        future: _auctionsFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Padding(
+              padding: EdgeInsets.all(40.0),
+              child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+            );
+          }
+
+          if (snapshot.hasError) {
+            return Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: AppColors.error.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.error_outline, color: AppColors.error, size: 40),
+                    const SizedBox(height: 12),
+                    const Text('حدث خطأ', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.error)),
+                    const SizedBox(height: 4),
+                    Text(
+                      snapshot.error.toString().replaceAll('Exception: ', ''),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton.icon(
+                      onPressed: _fetchAuctions,
+                      icon: const Icon(Icons.refresh, color: Colors.black),
+                      label: const Text('إعادة المحاولة', style: TextStyle(color: Colors.black)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          final auctions = snapshot.data ?? [];
+
+          if (auctions.isEmpty) {
+            return const Padding(
+              padding: EdgeInsets.all(40.0),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.inbox_outlined, size: 64, color: Colors.grey),
+                    SizedBox(height: 16),
+                    Text('لا توجد مزادات حالياً', style: TextStyle(color: Colors.grey, fontSize: 16)),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          return ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: auctions.length,
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 16.0),
+                child: AuctionCard(
+                  auction: auctions[index],
+                  onDeleteSuccess: _fetchAuctions,
+                ),
+              );
+            },
           );
         },
-        childCount: auctions.length,
       ),
     );
   }

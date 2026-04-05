@@ -51,7 +51,6 @@ class LeaderboardTheme {
         primary: amber,
         secondary: orange,
         surface: surface,
-        background: bg,
       ),
       dividerTheme: const DividerThemeData(color: border, thickness: 1),
     );
@@ -806,7 +805,7 @@ class LeaderboardTableSection extends StatelessWidget {
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: DataTable(
-              headingRowColor: MaterialStateProperty.all(LeaderboardTheme.surface),
+              headingRowColor: WidgetStateProperty.all(LeaderboardTheme.surface),
               dataRowHeight: 70,
               dividerThickness: 0.5,
               columns: [

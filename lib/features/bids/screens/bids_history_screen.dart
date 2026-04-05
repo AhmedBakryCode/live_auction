@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../dashboard/widgets/dashboard_header.dart';
@@ -7,9 +8,23 @@ import '../widgets/bids_filters_section.dart';
 import '../widgets/bids_table_section.dart';
 import '../widgets/bids_analytics_grid.dart';
 import '../../dashboard/widgets/sidebar_widget.dart';
+import '../providers/bids_provider.dart';
 
-class BidsHistoryScreen extends StatelessWidget {
+class BidsHistoryScreen extends StatefulWidget {
   const BidsHistoryScreen({super.key});
+
+  @override
+  State<BidsHistoryScreen> createState() => _BidsHistoryScreenState();
+}
+
+class _BidsHistoryScreenState extends State<BidsHistoryScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<BidsProvider>().loadUserBids();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
