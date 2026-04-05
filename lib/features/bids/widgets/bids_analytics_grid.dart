@@ -1,59 +1,95 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../providers/bids_provider.dart';
+import '../models/user_bid_model.dart';
 
 class BidsAnalyticsGrid extends StatelessWidget {
   const BidsAnalyticsGrid({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 1,
-      mainAxisSpacing: 16,
-      children: [
-        _buildAnalyticsCard(
-          'أعلى ٣ مزايدات',
-          Icons.trending_up_rounded,
-          AppColors.primary,
-          [
-            {'label': '١. @شيف_م', 'value': '\$٧,٤٠٠'},
-            {'label': '٢. @كافيه_روست', 'value': '\$٦,٨٠٠'},
-            {'label': '٣. @بيتزايولو', 'value': '\$٥,٢٠٠'},
+    return Consumer<BidsProvider>(
+      builder: (context, provider, child) {
+        final bids = List<UserBidModel>.from(provider.userBids);
+
+        // 1. Top 3 Bids
+        bids.sort((a, b) => b.amount.compareTo(a.amount));
+        final topBids = bids.take(3).map((b) => {
+          'label': 'مزاد #${b.auctionId}',
+          'value': '\$${b.amount.toStringAsFixed(1)}'
+        }).toList();
+
+        // 2. Recent Bids
+        List<UserBidModel> recentBidsSource = List.from(bids);
+        recentBidsSource.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        final recentBids = recentBidsSource.take(3).map((b) {
+          final dateParts = b.createdAt.split(' ');
+          final timeStr = dateParts.length > 1 ? dateParts.last : b.createdAt;
+          return {
+            'label': timeStr,
+            'value': '\$${b.amount.toStringAsFixed(1)}'
+          };
+        }).toList();
+
+        // 3. Most Active Users
+        final userCounts = <int, int>{};
+        for (var b in bids) {
+          userCounts[b.userId] = (userCounts[b.userId] ?? 0) + 1;
+        }
+        var sortedUsers = userCounts.entries.toList()
+          ..sort((a, b) => b.value.compareTo(a.value));
+        final activeUsers = sortedUsers.take(3).map((e) => {
+          'label': 'مستخدم #${e.key}',
+          'value': '${e.value} مزايدة'
+        }).toList();
+
+        // 4. Hot Auctions
+        final auctionCounts = <int, int>{};
+        for (var b in bids) {
+          auctionCounts[b.auctionId] = (auctionCounts[b.auctionId] ?? 0) + 1;
+        }
+        var sortedAuctions = auctionCounts.entries.toList()
+          ..sort((a, b) => b.value.compareTo(a.value));
+        final hotAuctions = sortedAuctions.take(3).map((e) => {
+          'label': 'مزاد #${e.key}',
+          'value': '${e.value} مزايدة'
+        }).toList();
+
+        return GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: 1,
+          mainAxisSpacing: 16,
+          children: [
+            _buildAnalyticsCard(
+              'أعلى المزادات',
+              Icons.trending_up_rounded,
+              AppColors.primary,
+              topBids.isEmpty ? [{'label': 'لا توجد بيانات', 'value': '-'}] : topBids,
+            ),
+            _buildAnalyticsCard(
+              'أحدث المزايدات',
+              Icons.access_time_rounded,
+              Colors.greenAccent,
+              recentBids.isEmpty ? [{'label': 'لا توجد بيانات', 'value': '-'}] : recentBids,
+            ),
+            _buildAnalyticsCard(
+              'الأكثر نشاطا',
+              Icons.emoji_events_rounded,
+              Colors.purpleAccent,
+              activeUsers.isEmpty ? [{'label': 'لا توجد بيانات', 'value': '-'}] : activeUsers,
+            ),
+            _buildAnalyticsCard(
+              'المزادات الساخنة',
+              Icons.local_fire_department_rounded,
+              Colors.orangeAccent,
+              hotAuctions.isEmpty ? [{'label': 'لا توجد بيانات', 'value': '-'}] : hotAuctions,
+            ),
           ],
-        ),
-        _buildAnalyticsCard(
-          'أحدث المزايدات',
-          Icons.access_time_rounded,
-          Colors.greenAccent,
-          [
-            {'label': 'منذ ١٠ د', 'value': '\$٧,٤٠٠'},
-            {'label': 'منذ ٢٥ د', 'value': '\$٣,٤٥٠'},
-            {'label': 'منذ ١ س', 'value': '\$٢,١٠٠'},
-          ],
-        ),
-        _buildAnalyticsCard(
-          'الأكثر نشاطا',
-          Icons.emoji_events_rounded,
-          Colors.purpleAccent,
-          [
-            {'label': '١. @شيف_م', 'value': '٤٥ مزايدة'},
-            {'label': '٢. @سارة_خالد', 'value': '٣٨ مزايدة'},
-            {'label': '٣. @عمر_حسن', 'value': '٣٢ مزايدة'},
-          ],
-        ),
-        _buildAnalyticsCard(
-          'المزادات الساخنة',
-          Icons.local_fire_department_rounded,
-          Colors.orangeAccent,
-          [
-            {'label': 'ماكينة إسبريسو', 'value': '٢٣ مزايدة'},
-            {'label': 'فرن بيتزا', 'value': '١٨ مزايدة'},
-            {'label': 'خلاط تجاري', 'value': '١٥ مزايدة'},
-          ],
-        ),
-      ],
+        );
+      },
     );
   }
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../models/auction_model.dart';
+import '../models/auction_bid_model.dart';
 import '../repositories/auctions_repository.dart';
 import 'package:intl/intl.dart';
 
@@ -16,6 +17,7 @@ class AuctionDetailsScreen extends StatefulWidget {
 
 class _AuctionDetailsScreenState extends State<AuctionDetailsScreen> {
   late Future<AuctionModel> _auctionFuture;
+  late Future<List<AuctionBidModel>> _bidsFuture;
   final AuctionsRepository _repository = AuctionsRepository();
   bool _isJoining = false;
 
@@ -78,6 +80,7 @@ class _AuctionDetailsScreenState extends State<AuctionDetailsScreen> {
   void _fetchData() {
     setState(() {
       _auctionFuture = _repository.fetchAuctionById(widget.id);
+      _bidsFuture = _repository.fetchAuctionBids(widget.id);
     });
   }
 
@@ -342,6 +345,10 @@ class _AuctionDetailsScreenState extends State<AuctionDetailsScreen> {
                     ],
                   ),
                 ),
+                const SizedBox(height: 24),
+                Text('المزايدات الحالية', style: AppTextStyles.h3),
+                const SizedBox(height: 12),
+                _buildBidsWidget(),
                 const SizedBox(height: 40),
               ],
             ),
@@ -423,6 +430,90 @@ class _AuctionDetailsScreenState extends State<AuctionDetailsScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildBidsWidget() {
+    return FutureBuilder<List<AuctionBidModel>>(
+      future: _bidsFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+        }
+
+        if (snapshot.hasError) {
+          return Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.card,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.error_outline, color: AppColors.error),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    snapshot.error.toString().replaceAll('Exception: ', ''),
+                    style: AppTextStyles.body2.copyWith(color: AppColors.error),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: AppColors.card,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Column(
+              children: [
+                const Icon(Icons.gavel_rounded, color: AppColors.textSecondary, size: 40),
+                const SizedBox(height: 8),
+                Text('لا توجد مزايدات حتى الآن', style: AppTextStyles.body1),
+              ],
+            ),
+          );
+        }
+
+        final bids = snapshot.data!;
+        return Container(
+          decoration: BoxDecoration(
+            color: AppColors.card,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: bids.length,
+            separatorBuilder: (context, index) => const Divider(color: AppColors.border, height: 1),
+            itemBuilder: (context, index) {
+              final bid = bids[index];
+              return ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                leading: CircleAvatar(
+                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                  backgroundImage: bid.user?.profileImage != null ? NetworkImage(bid.user!.fullProfileImageUrl) : null,
+                  child: bid.user?.profileImage == null
+                      ? const Icon(Icons.person, color: AppColors.primary)
+                      : null,
+                ),
+                title: Text(bid.user?.fullName ?? 'مستخدم #${bid.userId}', style: AppTextStyles.body1Bold),
+                subtitle: Text(_formatDate(bid.createdAt), style: AppTextStyles.caption),
+                trailing: Text('\$${bid.amount.toStringAsFixed(2)}', style: AppTextStyles.body1Bold.copyWith(color: AppColors.primary)),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }

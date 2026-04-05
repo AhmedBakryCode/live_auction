@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/auction_model.dart';
+import '../models/auction_bid_model.dart';
 import '../../../core/services/token_manager.dart';
 import '../../../core/network/api_helper.dart';
 
@@ -476,6 +477,39 @@ class AuctionsRepository {
         throw Exception(decodedResponse['message'] ?? 'فشل البحث: ${response.statusCode}');
       }
     } catch (e) {
+      if (e is http.ClientException) {
+        throw Exception('تعذر الاتصال بالخادم، يرجى التحقق من الاتصال');
+      }
+      rethrow;
+    }
+  }
+
+  Future<List<AuctionBidModel>> fetchAuctionBids(int id) async {
+    try {
+      print('[API_GET_AUCTION_BIDS] Fetching bids for auction id=$id...');
+      final response = await ApiHelper.requestWithRetry(() async {
+        return await http
+            .get(Uri.parse('$apiUrl/$id/bids'), headers: await _getHeaders())
+            .timeout(const Duration(seconds: 15));
+      });
+
+      print('[API_GET_AUCTION_BIDS] Status Code: ${response.statusCode}');
+
+      final decodedResponse = json.decode(response.body);
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = decodedResponse['data'] ?? [];
+        return data.map((json) => AuctionBidModel.fromJson(json)).toList();
+      } else if (response.statusCode == 404) {
+        throw Exception('المزاد غير موجود');
+      } else {
+        throw Exception(
+          decodedResponse['message'] ??
+              'فشل تحميل قائمة المزايدات: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      print('[API_GET_AUCTION_BIDS] Error: $e');
       if (e is http.ClientException) {
         throw Exception('تعذر الاتصال بالخادم، يرجى التحقق من الاتصال');
       }
