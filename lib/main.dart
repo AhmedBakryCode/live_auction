@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'app.dart';
-import 'core/services/service_locator.dart' as di;
+import 'customer_dashboard/core/services/service_locator.dart' as di;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
