@@ -1,18 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'admin_dashboard/admin/auctions/providers/auctions_provider.dart';
+import 'admin_dashboard/admin/bids/providers/bids_provider.dart';
+import 'admin_dashboard/admin/dashboard/providers/dashboard_provider.dart';
+import 'admin_dashboard/admin/leaderboard/providers/leaderboard_provider.dart';
+import 'admin_dashboard/admin/notifications/providers/notifications_provider.dart';
+import 'admin_dashboard/admin/users/providers/users_provider.dart';
+import 'admin_dashboard/admin/wallet/providers/payments_provider.dart';
+import 'admin_dashboard/admin/wallet/providers/wallet_provider.dart';
+import 'admin_dashboard/core/network/api_helper.dart';
+import 'admin_dashboard/core/services/token_manager.dart';
+import 'admin_dashboard/core/theme/app_colors.dart';
+import 'admin_dashboard/routes/app_routes.dart';
 
-import 'core/theme/app_colors.dart';
-import 'routes/app_routes.dart';
-import 'features/users/providers/users_provider.dart';
-import 'features/dashboard/providers/dashboard_provider.dart';
-import 'features/bids/providers/bids_provider.dart';
-
-import 'core/services/token_manager.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
+  final navigatorKey = GlobalKey<NavigatorState>();
+  ApiHelper.navigatorKey = navigatorKey;
+
   final bool hasToken = await TokenManager.hasToken();
   
   runApp(
@@ -21,6 +29,11 @@ void main() async {
         ChangeNotifierProvider(create: (_) => UsersProvider()),
         ChangeNotifierProvider(create: (_) => DashboardProvider()),
         ChangeNotifierProvider(create: (_) => BidsProvider()),
+        ChangeNotifierProvider(create: (_) => NotificationsProvider()),
+        ChangeNotifierProvider(create: (_) => PaymentsProvider()),
+        ChangeNotifierProvider(create: (_) => LeaderboardProvider()),
+        ChangeNotifierProvider(create: (_) => AuctionsProvider()),
+        ChangeNotifierProvider(create: (_) => WalletProvider()),
       ],
       child: LiveAuctionAdminApp(initialRoute: hasToken ? AppRoutes.dashboard : AppRoutes.login),
     ),
@@ -34,6 +47,7 @@ class LiveAuctionAdminApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: ApiHelper.navigatorKey,
       title: 'لوحة إدارة المزادات',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
