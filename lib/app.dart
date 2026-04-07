@@ -17,7 +17,9 @@ import 'customer_dashboard/features/profile/presentation/bloc/profile_bloc.dart'
 import 'customer_dashboard/features/auth/presentation/bloc/auth_bloc.dart';
 
 class LiveAuctionApp extends StatelessWidget {
-  const LiveAuctionApp({super.key});
+  LiveAuctionApp({super.key});
+
+  final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
   @override
   Widget build(BuildContext context) {
@@ -37,21 +39,33 @@ class LiveAuctionApp extends StatelessWidget {
           BlocProvider(create: (context) => sl<UserStatsBloc>()),
           BlocProvider(create: (context) => sl<ProfileBloc>()),
         ],
-        child: MaterialApp(
-          title: 'مزاد لايف',
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.lightTheme,
-          darkTheme: AppTheme.darkTheme,
-          themeMode: ThemeMode.system,
-          onGenerateRoute: AppRouter.onGenerateRoute,
-          initialRoute: AppRouter.authWrapper,
-          locale: const Locale('ar', 'EG'),
-          supportedLocales: const [Locale('ar', 'EG'), Locale('en', 'US')],
-          localizationsDelegates: const [
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
+        child: BlocListener<AuthBloc, AuthState>(
+          listenWhen: (previous, current) => current is Unauthenticated,
+          listener: (context, state) {
+            if (state is Unauthenticated) {
+              navigatorKey.currentState?.pushNamedAndRemoveUntil(
+                AppRouter.login,
+                (route) => false,
+              );
+            }
+          },
+          child: MaterialApp(
+            navigatorKey: navigatorKey,
+            title: 'مزاد لايف',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: ThemeMode.system,
+            onGenerateRoute: AppRouter.onGenerateRoute,
+            initialRoute: AppRouter.authWrapper,
+            locale: const Locale('ar', 'EG'),
+            supportedLocales: const [Locale('ar', 'EG'), Locale('en', 'US')],
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+          ),
         ),
       ),
     );

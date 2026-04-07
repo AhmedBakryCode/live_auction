@@ -19,6 +19,14 @@ class CustomNetworkImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Check if URL is valid (not a local file path)
+    final bool isValidUrl =
+        imageUrl.startsWith('http://') || imageUrl.startsWith('https://');
+
+    if (!isValidUrl || imageUrl.isEmpty) {
+      return _buildPlaceholder(context);
+    }
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(borderRadius),
       child: Image.network(
@@ -38,23 +46,30 @@ class CustomNetworkImage extends StatelessWidget {
           );
         },
         errorBuilder: (context, error, stackTrace) {
-          return Container(
-            width: width,
-            height: height,
-            color: AppColors.getContainerColor(context),
-            child: const Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.broken_image, color: Colors.grey, size: 30),
-                SizedBox(height: 4),
-                Text(
-                  'حدث خطأ',
-                  style: TextStyle(color: Colors.grey, fontSize: 10),
-                ),
-              ],
-            ),
-          );
+          return _buildPlaceholder(context);
         },
+      ),
+    );
+  }
+
+  Widget _buildPlaceholder(BuildContext context) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: AppColors.getContainerColor(context),
+        borderRadius: BorderRadius.circular(borderRadius),
+      ),
+      child: const Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.person, color: Colors.grey, size: 30),
+          SizedBox(height: 4),
+          Text(
+            'لا توجد صورة',
+            style: TextStyle(color: Colors.grey, fontSize: 10),
+          ),
+        ],
       ),
     );
   }
